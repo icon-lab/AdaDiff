@@ -68,7 +68,6 @@ You are encouraged to modify/distribute this code. However, please acknowledge t
 }
 
 ```
-For any questions, comments and contributions, please contact Alper Güngör (alpergungor[at]windowslive.com ) <br />
 
 (c) ICON Lab 2022
 
