@@ -34,10 +34,6 @@ For Single-Coil
 ```
 python3 train_adadiff_singlecoil.py --dataset brain --image_size 256 --exp experiment_name_for_singlecoil --num_channels 1 --num_channels_dae 64 --ch_mult 1 1 2 2 4 4 --num_timesteps 8 --num_res_blocks 2 --batch_size 8 --num_epoch 500 --ngf 64 --embedding_type positional --use_ema --ema_decay 0.999 --r1_gamma 1. --z_emb_dim 256 --lr_d 1e-4 --lr_g 1.6e-4 --lazy_reg 10 --num_process_per_node 1 --save_content --local_rank 0
 ```
-For Multi-Coil
-```
-python3 train_adadiff_multicoil.py --dataset brain_multi_coil --image_size 288 --exp experiment_name_for_multicoil --num_channels 2 --num_channels_dae 64 --ch_mult 1 1 1 2 2 --num_timesteps 8 --num_res_blocks 2 --batch_size 4 --num_epoch 500 --ngf 64 --embedding_type positional --use_ema --ema_decay 0.999 --r1_gamma 1. --z_emb_dim 256 --lr_d 1e-4 --lr_g 1.6e-4 --lazy_reg 10 --num_process_per_node 1 --save_content --attn_resolutions 18 --local_rank 0
-```
 <br />
 
 ## Inference
@@ -48,11 +44,6 @@ For Single-Coil
 ```
 python3 inference_adadiff_singlecoil.py --dataset brain --image_size 256 --exp content_folder_for_singlecoil --num_channels 1 --num_channels_dae 64 --ch_mult 1 1 2 2 4 4 --num_timesteps 8 --num_res_blocks 2 --epoch_id 1000 --batch_size 1 --lr_g 1e-3 --itr_inf 1000 --local_rank 0 --contrast T1 --phase test --save_inter True --R 4 --extra_string lr_1e3_opt_reset_ --reset_opt True
 ```
-For Multi-Coil
-```
-python3 inference_adadiff_multicoil.py --dataset brain_multi_coil --image_size 288 --exp content_folder_for_multicoil --num_channels 2 --num_channels_dae 64 --ch_mult 1 1 1 2 2 --num_timesteps 8 --num_res_blocks 2  --epoch_id 1000 --batch_size 1 --lr_g 1e-3 --itr_inf 1000 --attn_resolutions 18 --local_rank 0 --phase test --contrast T1 --R 4 --save_inter True --extra_string lr_1e3_opt_reset --reset_opt True 
-```
-
 <br />
 <br />
 
