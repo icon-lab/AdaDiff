@@ -2,14 +2,13 @@ import argparse
 import torch
 import numpy as np
 import os
-import copy
 import torch.optim as optim
 import torchvision
 from utils.models.ncsnpp_generator_adagn import NCSNpp
 from datasets_prep.brain_datasets import CreateDatasetReconstruction
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-
+from utils.args_op import add_singlecoil_inference_args
 
 def psnr(img1, img2):
     #Peak Signal to Noise Ratio
@@ -235,21 +234,21 @@ def sample_and_test(args):
     if args.exp !='DIP':
         #if a specific epoch is selected
         if args.epoch_sel:
-            checkpoint_file = '.../{}/{}/netG_{}.pth'
+            checkpoint_file = '../diffusion_test/saved_info/dd_gan/{}/{}/netG_{}.pth'
             load_checkpiont(checkpoint_file, netG, device = device, epoch_sel = True, epoch = args.epoch_id)
         #if the latest  
         else:
-            checkpoint_file = '.../{}/{}/content.pth'
+            checkpoint_file = '../diffusion_test/saved_info/dd_gan/{}/{}/content.pth'
             load_checkpiont(checkpoint_file, netG, device = device)
     #if the network is untrained, this part initilizes a random network and saves it
     else:
-        parent_dir = ".../{}".format(args.dataset)
+        parent_dir = "../diffusion_test/saved_info/dd_gan/{}".format(args.dataset)
         exp_path = os.path.join(parent_dir,args.exp)               
         if not os.path.exists(exp_path):
             os.makedirs(exp_path)        
         content = {'netG_dict': netG.state_dict()}    
         torch.save(content, os.path.join(exp_path, args.contrast+'_content.pth'))   
-        checkpoint_file = '.../{}/{}/'+args.contrast+'_content.pth'
+        checkpoint_file = '../diffusion_test/saved_info/dd_gan/{}/{}/'+args.contrast+'_content.pth'
 
     #define optimizer for adaptation
     optimizerG = optim.Adam(netG.parameters(), lr=args.lr_g, betas = (args.beta1, args.beta2))
@@ -263,7 +262,7 @@ def sample_and_test(args):
     #load coefficients of the diffusion model
     pos_coeff = Posterior_Coefficients(args, device)
     #saving directoy     
-    save_dir = ".../{}/{}/".format(args.dataset,  args.exp)
+    save_dir = "../diffusion_test/saved_info/dd_gan/{}/{}/".format(args.dataset,  args.exp)
     #if the path doesnt exist create it
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -359,98 +358,7 @@ def sample_and_test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('adadiff parameters')
-    parser.add_argument('--seed', type=int, default=1024,
-                        help='seed used for initialization')
-    parser.add_argument('--compute_fid', action='store_true', default=False,
-                            help='whether or not compute FID')
-    parser.add_argument('--epoch_id', type=int,default=1000)
-    parser.add_argument('--num_channels', type=int, default=3,
-                            help='channel of image')
-    parser.add_argument('--centered', action='store_false', default=True,
-                            help='-1,1 scale')
-    parser.add_argument('--use_geometric', action='store_true',default=False)
-    parser.add_argument('--beta_min', type=float, default= 0.1,
-                            help='beta_min for diffusion')
-    parser.add_argument('--beta_max', type=float, default=20.,
-                            help='beta_max for diffusion')
-    parser.add_argument('--num_channels_dae', type=int, default=128,
-                            help='number of initial channels in denosing model')
-    parser.add_argument('--n_mlp', type=int, default=3,
-                            help='number of mlp layers for z')
-    parser.add_argument('--ch_mult', nargs='+', type=int,
-                            help='channel multiplier')
-    parser.add_argument('--num_res_blocks', type=int, default=2,
-                            help='number of resnet blocks per scale')
-    parser.add_argument('--attn_resolutions', default=(16,),
-                            help='resolution of applying attention')
-    parser.add_argument('--dropout', type=float, default=0.,
-                            help='drop-out rate')
-    parser.add_argument('--resamp_with_conv', action='store_false', default=True,
-                            help='always up/down sampling with conv')
-    parser.add_argument('--conditional', action='store_false', default=True,
-                            help='noise conditional')
-    parser.add_argument('--fir', action='store_false', default=True,
-                            help='FIR')
-    parser.add_argument('--fir_kernel', default=[1, 3, 3, 1],
-                            help='FIR kernel')
-    parser.add_argument('--skip_rescale', action='store_false', default=True,
-                            help='skip rescale')
-    parser.add_argument('--resblock_type', default='biggan',
-                            help='tyle of resnet block, choice in biggan and ddpm')
-    parser.add_argument('--progressive', type=str, default='none', choices=['none', 'output_skip', 'residual'],
-                            help='progressive type for output')
-    parser.add_argument('--progressive_input', type=str, default='residual', choices=['none', 'input_skip', 'residual'],
-                        help='progressive type for input')
-    parser.add_argument('--progressive_combine', type=str, default='sum', choices=['sum', 'cat'],
-                        help='progressive combine method.')
-    parser.add_argument('--embedding_type', type=str, default='positional', choices=['positional', 'fourier'],
-                        help='type of time embedding')
-    parser.add_argument('--fourier_scale', type=float, default=16.,
-                            help='scale of fourier transform')
-    parser.add_argument('--not_use_tanh', action='store_true',default=False)
-    #geenrator and training
-    parser.add_argument('--exp', default='experiment_cifar_default', help='name of experiment')
-    parser.add_argument('--real_img_dir', default='./pytorch_fid/cifar10_train_stat.npy', help='directory to real images for FID computation')
-    parser.add_argument('--dataset', default='cifar10', help='name of dataset')
-    parser.add_argument('--image_size', type=int, default=32,
-                            help='size of image')
-    parser.add_argument('--nz', type=int, default=100)
-    parser.add_argument('--num_timesteps', type=int, default=4)
-    parser.add_argument('--z_emb_dim', type=int, default=256)
-    parser.add_argument('--t_emb_dim', type=int, default=256)
-    parser.add_argument('--batch_size', type=int, default=200, help='sample generating batch size')
-    parser.add_argument('--local_rank', type=int, default=0,
-                        help='rank of process in the node')
-    #optimizaer parameters    
-    parser.add_argument('--lr_g', type=float, default=1.5e-4, help='learning rate g')
-    parser.add_argument('--beta1', type=float, default=0.5,
-                            help='beta1 for adam')
-    parser.add_argument('--beta2', type=float, default=0.9,
-                            help='beta2 for adam')
-    parser.add_argument('--itr_inf', type=int, default=100,
-                            help='iterations for inference')
-    parser.add_argument('--contrast', type=str, default='T1',
-                            help='T1, T2 or PD')
-    parser.add_argument('--phase', type=str, default='val',
-                            help='val or test')  
-    parser.add_argument('--save_inter', type=bool, default=False,
-                            help='setting true woudl save intermediate results after 100 iterations')      
-    parser.add_argument('--R', type=int, default=4,
-                            help='acceleration rate')  
-    parser.add_argument('--extra_string', type=str, default='',
-                            help='extra   string for save_dir')      
-    parser.add_argument('--shuffle', type=bool, default=False,
-                            help='extra   string for save_dir') 
-    parser.add_argument('--reset_opt', type=bool, default=False,
-                            help='extra   string for save_dir')     
-    parser.add_argument('--lr_schedule', type=bool, default=False,
-                            help='extra   string for save_dir')   
-    parser.add_argument('--schedule', type=str, default='cosine_anneal',
-                            help='extra   string for save_dir')   
-    parser.add_argument('--epoch_sel', type=bool, default=False,
-                            help='extra   string for save_dir')  
-    parser.add_argument('--which_data', type=str, default='IXI',
-                            help='which data to load from')     
+    parser = add_singlecoil_inference_args(parser)
     args = parser.parse_args()
     torch.cuda.set_device(args.local_rank)
     sample_and_test(args)
